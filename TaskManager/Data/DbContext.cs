@@ -7,9 +7,9 @@ using System.Data.SQLite;
 
 namespace TaskManager.Data
 {
-    public class AppDbContext
+    public class DbContext
     {
-        private const string DatabaseFileName = "database.db";
+        private const string DatabaseFileName = "taskmanager.db";
         private static bool _initialized;
 
         public static SQLiteConnection CreateConnection()
