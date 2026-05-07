@@ -14,11 +14,14 @@ namespace TaskManager.Data
 
         public static SQLiteConnection CreateConnection()
         {
-            var connection = new SQLiteConnection($"Data Source={DatabaseFileName};");
+            var connection = new SQLiteConnection($"Data Source={DatabaseFileName};Version=3;");
             connection.Open();
             return connection;
         }
+        public static void Database_Create_ALPHA()
+        {
 
 
+        }
     }
 }
