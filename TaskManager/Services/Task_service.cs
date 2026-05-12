@@ -11,6 +11,17 @@ namespace TaskManager.Services
 {
     public class Task_service
     {
+
+        private static void Task_Parameters(SQLiteCommand command, TaskItem task)
+        {
+            command.Parameters.AddWithValue("@Name", task.Name ?? string.Empty);
+            command.Parameters.AddWithValue("@Title", task.Title ?? string.Empty);
+            command.Parameters.AddWithValue("@Category", task.Category ?? "Общее");
+            command.Parameters.AddWithValue("@IsCompleted", task.IsCompleted ? 1 : 0);
+            command.Parameters.AddWithValue("@AssignedToUserId", task.AssignedToUserId.HasValue ? (object)task.AssignedToUserId.Value : DBNull.Value);
+            command.Parameters.AddWithValue("@IsForAllWorkers", task.IsForAllWorkers ? 1 : 0);
+        }
+
         public static User Read_User(SQLiteDataReader reader, int offset)
         {
             return new User
@@ -48,6 +59,25 @@ namespace TaskManager.Services
             using (var connection = DbContext.CreateConnection())
             using (var command = connection.CreateCommand())
             {
+                command.CommandText = @"
+SELECT t.Id, t.Name, t.Title, t.Category, t.IsCompleted,
+       t.CreatedByUserId, t.AssignedToUserId, t.IsForAllWorkers,
+       cu.Id, cu.Login, cu.Password, cu.Name, cu.Role,
+       au.Id, au.Login, au.Password, au.Name, au.Role
+FROM TaskItems t
+JOIN Users cu ON cu.Id = t.CreatedByUserId
+LEFT JOIN Users au ON au.Id = t.AssignedToUserId
+WHERE (@IsManager = 1 OR t.CreatedByUserId = @CurrentUserId OR t.AssignedToUserId = @CurrentUserId OR t.IsForAllWorkers = 1)
+  AND (@Category = 'Все' OR t.Category = @Category)
+ORDER BY t.Category ASC, t.Id DESC;";
+                command.Parameters.AddWithValue("@IsManager", currentUser.Role == UserRole.Manager ? 1 : 0);
+                command.Parameters.AddWithValue("@CurrentUserId", currentUser.Id);
+                command.Parameters.AddWithValue("@Category", string.IsNullOrWhiteSpace(category) ? "Все" : category);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read()) resultat.Add(Read_Task(reader));
+                }
             }
             return resultat;
         }
@@ -89,12 +119,39 @@ WHERE t.Id = @Id;";
         {
             var tasks = Task_Id(task.Id);
             if (tasks == null) return;
+
+            using (var connection = DbContext.CreateConnection())
+            using (var command = new SQLiteCommand("DELETE FROM TaskItems WHERE Id = @Id;", connection))
+            {
+                command.Parameters.AddWithValue("@Id", task.Id);
+                command.ExecuteNonQuery();
+            }
         }
         public void Add_Task(TaskItem task, User currentUser)
         {
             var tasks = Task_Id(task.Id);
             if (tasks == null) return;
+
+            task.CreatedByUserId = currentUser.Id;
+
+            if (currentUser.Role == UserRole.Worker)
+            {
+                task.AssignedToUserId = currentUser.Id;
+                task.IsForAllWorkers = false;
+            }
+
+            using (var connection = DbContext.CreateConnection())
+            using (var command = new SQLiteCommand(@"
+INSERT INTO TaskItems (Name, Title, Category, IsCompleted, CreatedByUserId, AssignedToUserId, IsForAllWorkers)
+VALUES (@Name, @Title, @Category, @IsCompleted, @CreatedByUserId, @AssignedToUserId, @IsForAllWorkers);", connection))
+            {
+                Task_Parameters(command, task);
+                command.Parameters.AddWithValue("@CreatedByUserId", task.CreatedByUserId);
+                command.ExecuteNonQuery();
+            }
         }
+
+
         public List<string> Get_Categori(User currentUser)
         {
             var categories = Get_Tasks(currentUser)
