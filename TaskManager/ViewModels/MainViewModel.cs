@@ -26,8 +26,8 @@ namespace TaskManager.ViewModels
         private string _password;
         private string _name;
         private string _title;
-        private string _category = "�����";
-        private string _selectedCategory = "���";
+        private string _category = "Общее";
+        private string _selectedCategory = "Все";
         private bool _isCompleted;
         private bool _isForAllWorkers;
         private string _message;
@@ -41,7 +41,7 @@ namespace TaskManager.ViewModels
         public User CurrentUser { get => _currentUser; set { _currentUser = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsAuthenticated)); OnPropertyChanged(nameof(IsManager)); OnPropertyChanged(nameof(CurrentUserInfo)); } }
         public bool IsAuthenticated => CurrentUser != null;
         public bool IsManager => CurrentUser != null && CurrentUser.Role == UserRole.Manager;
-        public string CurrentUserInfo => CurrentUser == null ? "�� �� �����" : $"{CurrentUser.Name} ({CurrentUser.Role})";
+        public string CurrentUserInfo => CurrentUser == null ? "Вы не вошли" : $"{CurrentUser.Name} ({CurrentUser.Role})";
 
         public TaskItem SelectedTask
         {
@@ -84,16 +84,16 @@ namespace TaskManager.ViewModels
 
         private void LoginUser()
         {
-            MessageBox.Show("���� �����");
+            MessageBox.Show("алоо нахуй");
             CurrentUser = _authService.Login(Login, Password);
             if (CurrentUser == null)
             {
-                Message = "�������� ����� ��� ������.";
+                Message = "Неверный логин или пароль.";
                 Console.Write(Message);
                 return;
             }
 
-            Message = "���� ��������.";
+            Message = "Вход выполнен.";
             RefreshAll();
         }
 
@@ -104,7 +104,7 @@ namespace TaskManager.ViewModels
             Workers.Clear();
             Categories.Clear();
             ClearForm();
-            Message = "����� ��������.";
+            Message = "Выход выполнен.";
         }
 
         private void RefreshAll()
@@ -132,7 +132,7 @@ namespace TaskManager.ViewModels
             var old = SelectedCategory;
             Categories.Clear();
             foreach (var category in _taskService.Get_Categori(CurrentUser)) Categories.Add(category);
-            SelectedCategory = Categories.Contains(old) ? old : "���";
+            SelectedCategory = Categories.Contains(old) ? old : "Все";
         }
 
         private void AddTask()
@@ -141,7 +141,7 @@ namespace TaskManager.ViewModels
             try
             {
                 _taskService.Add_Task(BuildTaskFromForm(), CurrentUser);
-                Message = "������ �������.";
+                Message = "Задача создана.";
                 ClearForm();
                 RefreshAll();
             }
@@ -155,7 +155,7 @@ namespace TaskManager.ViewModels
             try
             {
                 _taskService.Delete_Task(SelectedTask, CurrentUser);
-                Message = "������ �������.";
+                Message = "Задача удалена.";
                 ClearForm();
                 RefreshAll();
             }
@@ -164,10 +164,10 @@ namespace TaskManager.ViewModels
 
         private bool ValidateForm()
         {
-            if (string.IsNullOrWhiteSpace(Name)) { Message = "������� ��� ������."; return false; }
-            if (string.IsNullOrWhiteSpace(Title)) { Message = "������� ��������� ������."; return false; }
-            if (string.IsNullOrWhiteSpace(Category)) { Message = "������� ���������."; return false; }
-            if (IsManager && !IsForAllWorkers && SelectedWorker == null) { Message = "�������� ��������� ��� �������� '��� ����'."; return false; }
+            if (string.IsNullOrWhiteSpace(Name)) { Message = "Введите имя задачи."; return false; }
+            if (string.IsNullOrWhiteSpace(Title)) { Message = "Введите заголовок задачи."; return false; }
+            if (string.IsNullOrWhiteSpace(Category)) { Message = "Введите категорию."; return false; }
+            if (IsManager && !IsForAllWorkers && SelectedWorker == null) { Message = "Выберите работника или отметьте 'для всех'."; return false; }
             return true;
         }
 
@@ -199,7 +199,7 @@ namespace TaskManager.ViewModels
             SelectedTask = null;
             Name = string.Empty;
             Title = string.Empty;
-            Category = "�����";
+            Category = "Общее";
             IsCompleted = false;
             IsForAllWorkers = false;
             SelectedWorker = Workers.FirstOrDefault();
