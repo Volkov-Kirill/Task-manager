@@ -81,6 +81,43 @@ ORDER BY t.Category ASC, t.Id DESC;";
             }
             return resultat;
         }
+
+        public void Update_Task(TaskItem editedTask, User currentUser)
+        {
+            var task = Task_Id(editedTask.Id);
+            if (task == null) return;
+
+            if (!Edit_Task(task, currentUser) )
+                throw new InvalidOperationException("Нет прав на изменение этой задачи.");
+
+            if (Edit_Task(task, currentUser))
+            {
+                task.Name = editedTask.Name;
+                task.Title = editedTask.Title;
+                task.Category = editedTask.Category;
+                task.AssignedToUserId = currentUser.Role == UserRole.Manager ? editedTask.AssignedToUserId : currentUser.Id;
+                task.IsForAllWorkers = currentUser.Role == UserRole.Manager && editedTask.IsForAllWorkers;
+            }
+
+            task.IsCompleted = editedTask.IsCompleted;
+
+            using (var connection = DbContext.CreateConnection())
+            using (var command = new SQLiteCommand(@"
+UPDATE TaskItems
+SET Name = @Name,
+    Title = @Title,
+    Category = @Category,
+    IsCompleted = @IsCompleted,
+    AssignedToUserId = @AssignedToUserId,
+    IsForAllWorkers = @IsForAllWorkers
+WHERE Id = @Id;", connection))
+            {
+                command.Parameters.AddWithValue("@Id", task.Id);
+                Task_Parameters(command, task);
+                command.ExecuteNonQuery();
+            }
+        }
+
         private TaskItem Task_Id(int id)
         {
             using (var connection = DbContext.CreateConnection())
