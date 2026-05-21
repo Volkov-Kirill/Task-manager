@@ -76,7 +76,7 @@ namespace TaskManager.ViewModels
             LoginCommand = new Command(_ => LoginUser());
             LogoutCommand = new Command(_ => Logout(), _ => IsAuthenticated);
             AddCommand = new Command(_ => AddTask(), _ => IsAuthenticated);
-            //UpdateCommand = new Command(_ => UpdateTask(), _ => IsAuthenticated && SelectedTask != null);
+            UpdateCommand = new Command(_ => UpdateTask(), _ => IsAuthenticated && SelectedTask != null);
             DeleteCommand = new Command(_ => DeleteTask(), _ => IsAuthenticated && SelectedTask != null);
             ClearCommand = new Command(_ => ClearForm());
             RefreshCommand = new Command(_ => RefreshAll(), _ => IsAuthenticated);
@@ -84,7 +84,6 @@ namespace TaskManager.ViewModels
 
         private void LoginUser()
         {
-            MessageBox.Show("алоо нахуй");
             CurrentUser = _authService.Login(Login, Password);
             if (CurrentUser == null)
             {
