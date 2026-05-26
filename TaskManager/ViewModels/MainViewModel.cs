@@ -81,6 +81,22 @@ namespace TaskManager.ViewModels
             ClearCommand = new Command(_ => ClearForm());
             RefreshCommand = new Command(_ => RefreshAll(), _ => IsAuthenticated);
         }
+        private void UpdateTask()
+        {
+            if (!ValidateForm()) return;
+
+            try
+            {
+                _taskService.Update_Task(BuildTaskFromForm(), CurrentUser);
+                Message = "Задача обновлена.";
+                ClearForm();
+                RefreshAll();
+            }
+            catch (Exception ex)
+            {
+                Message = ex.Message;
+            }
+        }
 
         private void LoginUser()
         {
