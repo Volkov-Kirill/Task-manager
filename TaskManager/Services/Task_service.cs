@@ -53,7 +53,7 @@ namespace TaskManager.Services
             return task;
         }
 
-        public List<TaskItem> Get_Tasks(User currentUser, string category = "все")
+        public List<TaskItem> Get_Tasks(User currentUser, string category = "Все")
         {
             var resultat = new List<TaskItem>();
             using (var connection = DbContext.CreateConnection())
@@ -85,21 +85,36 @@ ORDER BY t.Category ASC, t.Id DESC;";
         public void Update_Task(TaskItem editedTask, User currentUser)
         {
             var task = Task_Id(editedTask.Id);
-            if (task == null) return;
+            bool canEdit = Edit_Task(task, currentUser);
 
-            if (!Edit_Task(task, currentUser) )
+            bool canChangeStatus =
+                canEdit ||
+                task.AssignedToUserId == currentUser.Id ||
+                task.IsForAllWorkers;
+
+            if (!canEdit && !canChangeStatus)
                 throw new InvalidOperationException("Нет прав на изменение этой задачи.");
 
-            if (Edit_Task(task, currentUser))
+            if (canEdit)
             {
                 task.Name = editedTask.Name;
                 task.Title = editedTask.Title;
                 task.Category = editedTask.Category;
-                task.AssignedToUserId = currentUser.Role == UserRole.Manager ? editedTask.AssignedToUserId : currentUser.Id;
-                task.IsForAllWorkers = currentUser.Role == UserRole.Manager && editedTask.IsForAllWorkers;
+
+                task.AssignedToUserId =
+                    currentUser.Role == UserRole.Manager
+                    ? editedTask.AssignedToUserId
+                    : currentUser.Id;
+
+                task.IsForAllWorkers =
+                    currentUser.Role == UserRole.Manager &&
+                    editedTask.IsForAllWorkers;
             }
 
-            task.IsCompleted = editedTask.IsCompleted;
+            if (canChangeStatus)
+            {
+                task.IsCompleted = editedTask.IsCompleted;
+            }
 
             using (var connection = DbContext.CreateConnection())
             using (var command = new SQLiteCommand(@"
@@ -166,9 +181,6 @@ WHERE t.Id = @Id;";
         }
         public void Add_Task(TaskItem task, User currentUser)
         {
-            var tasks = Task_Id(task.Id);
-            if (tasks == null) return;
-
             task.CreatedByUserId = currentUser.Id;
 
             if (currentUser.Role == UserRole.Worker)

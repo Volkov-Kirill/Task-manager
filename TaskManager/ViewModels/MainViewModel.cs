@@ -83,11 +83,14 @@ namespace TaskManager.ViewModels
         }
         private void UpdateTask()
         {
+            if (SelectedTask == null) return;
             if (!ValidateForm()) return;
 
             try
             {
-                _taskService.Update_Task(BuildTaskFromForm(), CurrentUser);
+                var task = BuildTaskFromForm();
+                task.Id = SelectedTask.Id;
+                _taskService.Update_Task(task, CurrentUser);
                 Message = "Задача обновлена.";
                 ClearForm();
                 RefreshAll();
