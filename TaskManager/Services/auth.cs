@@ -21,7 +21,7 @@ namespace TaskManager.Services
 
                 using (var reader = command.ExecuteReader())
                 {
-                    //Сюда нужно наверное провеку сделать ???
+                    if (!reader.Read()) return null;
 
                     return new User
                     {
